@@ -1,51 +1,61 @@
-import threading
-import sys
-sys.path.insert(0, '..')
 import os
 import time
 import tkinter as tk
 from tkinter import messagebox
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from pathlib import Path
-from qass.qassDecodeRaw import qassDecodeRaw
-
+import glob
 
 
 class FileHandler(FileSystemEventHandler):
     def __init__(self):
         self.count = 0
+        self.last_file_name = ""
 
     def on_created(self, event):
         if event.is_directory:
             return
 
         self.count += 1
-        if self.count % 40 == 0:
+        if self.count % 1 == 0:
             self.show_message(event)
 
     def show_message(self, event):
         root = tk.Tk()
+        root.attributes('-topmost', True)
         root.withdraw()  # Hide the main window
 
         response = messagebox.askokcancel("Meldung", "Bitte das Teil herausnehmen! Nach Herausnahme OK drücken.")
         if response:
-            current_time = time.strftime("%Y-%m-%d %H:%M:%S")
-            print("Zeitpunkt:", current_time)
 
-            self.last_file_name = os.path.basename(event.src_path)
-            fname = Path(self.folder + "/" + self.last_file_name)
-            data, file_header_map = qassDecodeRaw(fname)
-            qass_nr = file_header_map["proc_cnt"]
+            start_time = time.time()
+
+            current_time = time.strftime("%Y-%m-%d %H:%M:%S")
+
+            list_of_files = sorted(glob.glob(self.folder + "/*"))
+            last_file = list_of_files[-1]
+
+            needed_file = last_file
+
+            if os.path.getctime(last_file) > start_time:
+                needed_file = list_of_files[-2]
+
+            qass_nr = needed_file.split("0025p")[1].split("c0b01")[0]
+
+            txt_path = "//sftpgwessbachsa.file.core.windows.net/sftpgwessbachfs/DoE_Oli_TXT_fuer_Messungen/last_added_file.txt"
+
+            print(qass_nr + " wurde herausgenommen.")
 
             # Schreibe den Dateinamen in eine Textdatei
-            with open("last_added_file.txt", "a+") as file:
-                file.write(qass_nr + "\n")
+            with open(txt_path, 'a+') as file:
+                file.write(current_time + ";" + qass_nr + "\n")
 
         root.destroy()
 
+
 def watch_folder(folder_to_watch):
     event_handler = FileHandler()
+    event_handler.folder = folder_to_watch
     observer = Observer()
     observer.schedule(event_handler, folder_to_watch, recursive=False)
     observer.start()
@@ -58,7 +68,7 @@ def watch_folder(folder_to_watch):
 
     observer.join()
 
+
 if __name__ == "__main__":
-    folder_to_watch = "//sftpgwessbachsa.file.core.windows.net/sftpgwessbachfs/Langzeituntersuchung_Oli"
-    #folder_to_watch = "/Users/oliverschendel/GitHub Repos/Feature-Extraction-Qass/Quality_Data_Reany"
+    folder_to_watch = "//sftpgwessbachsa.file.core.windows.net/sftpgwessbachfs/DoE_Verschleiss_Qass"
     watch_folder(folder_to_watch)
