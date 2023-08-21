@@ -42,7 +42,7 @@ class FileHandler(FileSystemEventHandler):
 
             qass_nr = needed_file.split("0025p")[1].split("c0b01")[0]
 
-            txt_path = "/Volume/sftpgwessbachfs/DoE_Oli_TXT_fuer_Messungen/last_added_file.txt"
+            txt_path = "//sftpgwessbachsa.file.core.windows.net/sftpgwessbachfs/DoE_Oli_TXT_fuer_Messungen/last_added_file.txt"
 
             print(qass_nr + " wurde herausgenommen.")
 
@@ -70,5 +70,5 @@ def watch_folder(folder_to_watch):
 
 
 if __name__ == "__main__":
-    folder_to_watch = "/Users/oliverschendel/Oli Ali"
+    folder_to_watch = "//sftpgwessbachsa.file.core.windows.net/sftpgwessbachfs/DoE_Verschleiss_Qass"
     watch_folder(folder_to_watch)

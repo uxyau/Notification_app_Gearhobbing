@@ -6,14 +6,16 @@ import time
 import os
 import glob
 
+
 class FileHandler(FileSystemEventHandler):
-    def __init__(self, app_textbox, teile_count_box, last_5_lines, folder_to_watch):
+    def __init__(self, app_textbox, teile_count_box, last_5_lines, folder_to_watch, root):
         self.count = 0
         self.app_textbox = app_textbox
         self.teile_count_box = teile_count_box
         self.last_5_lines = last_5_lines
         self.entnahme_frequenz = 1
         self.folder = folder_to_watch
+        self.root = root
 
     def on_created(self, event):
         if event.is_directory:
@@ -22,16 +24,25 @@ class FileHandler(FileSystemEventHandler):
         self.count += 1
         self.teile_count_box.config(text=f"Anzahl Teile bis zur \n nächsten Entnahme: \n{self.entnahme_frequenz - (self.count % self.entnahme_frequenz)}")
         if self.count % self.entnahme_frequenz == 0:
-            self.show_message(event)
+            self.show_message(self.root, event)
 
-    def show_message(self, event):
-        root = tk.Tk()
-        root.attributes('-topmost', True)
-        root.withdraw()
+    def show_message(self, root, event):
+        #root = tk.Tk()
+        #root.attributes('-topmost', True)
+        #root.withdraw()
 
-        response = messagebox.askokcancel("Meldung", "Bitte das Teil herausnehmen! Nach Herausnahme OK drücken.")
-        if response:
+        #response = messagebox.askokcancel("Meldung", "Bitte das Teil herausnehmen! Nach Herausnahme OK drücken.")
+        #if response:
+         #       self.handle_file(event)def show_message(self, root, event):  # root als Parameter hinzufügen
+        def create_dialog():
+            top = tk.Toplevel(root)  # Verwenden Sie Toplevel statt Tk
+            top.attributes('-topmost', True)
+
+            response = messagebox.askokcancel("Meldung", "Bitte das Teil herausnehmen! Nach Herausnahme OK drücken.", parent=top)
+            if response:
                 self.handle_file(event)
+
+        root.after(0, create_dialog)  # Verschieben Sie die GUI-Interaktion in den Haupt-GUI-Thread
 
     def handle_file(self, event=None):
         start_time = time.time()
@@ -51,7 +62,7 @@ class FileHandler(FileSystemEventHandler):
         self.update_textbox(qass_nr + " wurde herausgenommen.")
 
     def save_to_file(self, current_time, qass_nr):
-        txt_path = "/Volumes/sftpgwessbachfs/DoE_Oli_TXT_fuer_Messungen/last_added_file.txt"
+        txt_path = "//sftpgwessbachsa.file.core.windows.net/sftpgwessbachfs/DoE_Oli_TXT_fuer_Messungen/last_added_file.txt"
         with open(txt_path, 'a+') as file:
             file.write(current_time + ";" + qass_nr + "\n")
             lines = file.readlines()
@@ -68,6 +79,7 @@ class FileHandler(FileSystemEventHandler):
 
 
 def watch_folder(folder_to_watch):
+    root1 = tk.Tk()
     root = tk.Tk()
     root.attributes("-topmost", True)
     root.title("Ordnerüberwachung")
@@ -98,7 +110,7 @@ def watch_folder(folder_to_watch):
         event_handler.handle_file()
 
     def delete_last_line():
-        txt_path = "/Volumes/sftpgwessbachfs/DoE_Oli_TXT_fuer_Messungen/last_added_file.txt"
+        txt_path = "//sftpgwessbachsa.file.core.windows.net/sftpgwessbachfs/DoE_Oli_TXT_fuer_Messungen/last_added_file.txt"
         lines = []
         with open(txt_path, 'r') as file:
             lines = file.readlines()
@@ -118,8 +130,7 @@ def watch_folder(folder_to_watch):
     tk.Button(frame, text="Manuelle Entnahme", command=manual_removal).pack(pady=10)
     tk.Button(frame, text="Zeile löschen", command=delete_last_line, fg="red").pack(pady=10)
 
-    event_handler = FileHandler(app_textbox, teile_counter, last_5_lines, folder_to_watch)
-    #event_handler.folder = folder_to_watch
+    event_handler = FileHandler(app_textbox, teile_counter, last_5_lines, folder_to_watch, root1)
 
     observer = Observer()
     observer.schedule(event_handler, folder_to_watch, recursive=False)
@@ -133,16 +144,7 @@ def watch_folder(folder_to_watch):
 
     observer.join()
 
-    #def on_closing():
-    #    observer.stop()
-    #    root.destroy()
-
-    ##root.protocol("WM_DELETE_WINDOW", on_closing)
-    #root.mainloop()
-
-    #observer.join()
-
 
 if __name__ == "__main__":
-    folder_to_watch = "/Volumes/sftpgwessbachfs/DoE_Verschleiss_Qass"
+    folder_to_watch = "//sftpgwessbachsa.file.core.windows.net/sftpgwessbachfs/DoE_Verschleiss_Qass"
     watch_folder(folder_to_watch)
